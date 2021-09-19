@@ -236,70 +236,79 @@ class BOMCommandExecuteHandler(adsk.core.CommandEventHandler):
 
         # for each unique component found, write to string
         for item in bom:
-            # Name, Parent, Part #, Qtny, Desc, W, L, H, Vol, Area, Mass, Den, Mat
-            dims = ''
-            name = self.filterFusionCompNameInserts(item["name"])
-            if prefs[KEY_PREF_IGNORE_PREFIXED_COMP] is False and prefs[KEY_PREF_STRIP_UNDERSCORE] is True and name[0] == '_':
-                name = name[1:]
+            #linanw
+            component = item["component"]
+            bRepBodies = component.bRepBodies
+            for body in bRepBodies:
+                
+                # Name, Parent, Part #, Qtny, Desc, W, L, H, Vol, Area, Mass, Den, Mat
+                dims = ''
+                name = self.filterFusionCompNameInserts(item["name"])
+                if prefs[KEY_PREF_IGNORE_PREFIXED_COMP] is False and prefs[KEY_PREF_STRIP_UNDERSCORE] is True and name[0] == '_':
+                    name = name[1:]
 
-            # write name
-            csvStr += '"' + name + '",'
-            
-            # write parent if option selected
-            if prefs[KEY_PREF_INC_PARENT]:
-                csvStr += '"' + item["parent"] + '",'
+                #linanw
+                name = name + "_" + body.name
 
-            # write part number if option selected
-            if prefs[KEY_PREF_INC_PART_NUMBER]:
-                csvStr += '"' + item["partnumber"] + '",'
+                # write name
+                csvStr += '"' + name + '",'
+                
+                # write parent if option selected
+                if prefs[KEY_PREF_INC_PARENT]:
+                    csvStr += '"' + item["parent"] + '",'
 
-            # Write Quantity
-            csvStr += '"' + self.replacePointDelimterOnPref(prefs[KEY_PREF_USE_COMMA], item["instances"]) + '",'
-            
-            # write description if option selected
-            if prefs[KEY_PREF_INC_DESCRIPTION]:
-                csvStr += '"' + item["desc"] + '",'
+                # write part number if option selected
+                if prefs[KEY_PREF_INC_PART_NUMBER]:
+                    csvStr += '"' + item["partnumber"] + '",'
 
-            # write dimension information if option selected
-            if prefs[KEY_PREF_INC_DIMENSIONS]:
-            	dim = 0
-            	for k in item["boundingBox"]:
-            		dim += item["boundingBox"][k]
-            	if dim > 0:
-            		dimX = float(design.fusionUnitsManager.formatInternalValue(item["boundingBox"]["x"], defaultUnit, False))
-            		dimY = float(design.fusionUnitsManager.formatInternalValue(item["boundingBox"]["y"], defaultUnit, False))
-            		dimZ = float(design.fusionUnitsManager.formatInternalValue(item["boundingBox"]["z"], defaultUnit, False))
-            		if prefs[KEY_PREF_SORT_DIM]:
-            			dimSorted = sorted([dimX, dimY, dimZ])
-            			bbZ = "{0:.3f}".format(dimSorted[0])
-            			bbX = "{0:.3f}".format(dimSorted[1])
-            			bbY = "{0:.3f}".format(dimSorted[2])
-            		else:
-            			bbX = "{0:.3f}".format(dimX)
-            			bbY = "{0:.3f}".format(dimY)
-            			bbZ = "{0:.3f}".format(dimZ)
-            		# write dimensions
-            		csvStr += '"' + self.replacePointDelimterOnPref(prefs[KEY_PREF_USE_COMMA], bbX) + '",'
-            		csvStr += '"' + self.replacePointDelimterOnPref(prefs[KEY_PREF_USE_COMMA], bbY) + '",'
-            		csvStr += '"' + self.replacePointDelimterOnPref(prefs[KEY_PREF_USE_COMMA], bbZ) + '",'
-            	else:
-                    csvStr += "0" + ','
-                    csvStr += "0" + ','
-                    csvStr += "0" + ','
+                # Write Quantity
+                csvStr += '"' + self.replacePointDelimterOnPref(prefs[KEY_PREF_USE_COMMA], item["instances"]) + '",'
+                
+                # write description if option selected
+                if prefs[KEY_PREF_INC_DESCRIPTION]:
+                    csvStr += '"' + item["desc"] + '",'
 
-            if prefs[KEY_PREF_INC_VOLUME]:
-            	csvStr += '"' + self.replacePointDelimterOnPref(prefs[KEY_PREF_USE_COMMA], item["volume"]) + '",'
-            if prefs[KEY_PREF_INC_AREA]:
-            	csvStr += '"' + self.replacePointDelimterOnPref(prefs[KEY_PREF_USE_COMMA], "{0:.2f}".format(item["area"])) + '",'
-            if prefs[KEY_PREF_INC_MASS]:
-            	csvStr += '"' + self.replacePointDelimterOnPref(prefs[KEY_PREF_USE_COMMA], "{0:.5f}".format(item["mass"])) + '",'
-            if prefs[KEY_PREF_INC_DENSITY]:
-            	csvStr += '"' + self.replacePointDelimterOnPref(prefs[KEY_PREF_USE_COMMA], "{0:.5f}".format(item["density"])) + '",'
-            if prefs[KEY_PREF_INC_MATERIAL]:
-            	csvStr += '"' + item["material"] + '",'
+                # write dimension information if option selected
+                if prefs[KEY_PREF_INC_DIMENSIONS]:
+                    dim = 0
+                    bbXYZ = self.getBodyBoundingBox(body)
+                    for k in bbXYZ:
+                        dim += bbXYZ[k]
+                    if dim > 0:
+                        dimX = float(design.fusionUnitsManager.formatInternalValue(bbXYZ["x"], defaultUnit, False))
+                        dimY = float(design.fusionUnitsManager.formatInternalValue(bbXYZ["y"], defaultUnit, False))
+                        dimZ = float(design.fusionUnitsManager.formatInternalValue(bbXYZ["z"], defaultUnit, False))
+                        if prefs[KEY_PREF_SORT_DIM]:
+                            dimSorted = sorted([dimX, dimY, dimZ])
+                            bbZ = "{0:.3f}".format(dimSorted[0])
+                            bbX = "{0:.3f}".format(dimSorted[1])
+                            bbY = "{0:.3f}".format(dimSorted[2])
+                        else:
+                            bbX = "{0:.3f}".format(dimX)
+                            bbY = "{0:.3f}".format(dimY)
+                            bbZ = "{0:.3f}".format(dimZ)
+                        # write dimensions
+                        csvStr += '"' + self.replacePointDelimterOnPref(prefs[KEY_PREF_USE_COMMA], bbX) + '",'
+                        csvStr += '"' + self.replacePointDelimterOnPref(prefs[KEY_PREF_USE_COMMA], bbY) + '",'
+                        csvStr += '"' + self.replacePointDelimterOnPref(prefs[KEY_PREF_USE_COMMA], bbZ) + '",'
+                    else:
+                        csvStr += "0" + ','
+                        csvStr += "0" + ','
+                        csvStr += "0" + ','
 
-            # write newline
-            csvStr += '\n'
+                if prefs[KEY_PREF_INC_VOLUME]:
+                    csvStr += '"' + self.replacePointDelimterOnPref(prefs[KEY_PREF_USE_COMMA], item["volume"]) + '",'
+                if prefs[KEY_PREF_INC_AREA]:
+                    csvStr += '"' + self.replacePointDelimterOnPref(prefs[KEY_PREF_USE_COMMA], "{0:.2f}".format(item["area"])) + '",'
+                if prefs[KEY_PREF_INC_MASS]:
+                    csvStr += '"' + self.replacePointDelimterOnPref(prefs[KEY_PREF_USE_COMMA], "{0:.5f}".format(item["mass"])) + '",'
+                if prefs[KEY_PREF_INC_DENSITY]:
+                    csvStr += '"' + self.replacePointDelimterOnPref(prefs[KEY_PREF_USE_COMMA], "{0:.5f}".format(item["density"])) + '",'
+                if prefs[KEY_PREF_INC_MATERIAL]:
+                    csvStr += '"' + item["material"] + '",'
+
+                # write newline
+                csvStr += '\n'
         return csvStr
 
     def collectCutList(self, design, bom, prefs):
@@ -450,6 +459,31 @@ class BOMCommandExecuteHandler(adsk.core.CommandEventHandler):
                     minPointZ = bb.minPoint.z
                 if not maxPointZ or bb.maxPoint.z > maxPointZ:
                     maxPointZ = bb.maxPoint.z
+        return {
+            "x": maxPointX - minPointX,
+            "y": maxPointY - minPointY,
+            "z": maxPointZ - minPointZ
+        }
+
+    def getBodyBoundingBox(self, body):
+        minPointX = maxPointX = minPointY = maxPointY = minPointZ = maxPointZ = 0
+        # Examining the maximum min point distance and the maximum max point distance.
+        if body.isSolid:
+            bb = self.calculateTightBoundingBox(body, 0)
+            if not bb:
+                return None
+            if not minPointX or bb.minPoint.x < minPointX:
+                minPointX = bb.minPoint.x
+            if not maxPointX or bb.maxPoint.x > maxPointX:
+                maxPointX = bb.maxPoint.x
+            if not minPointY or bb.minPoint.y < minPointY:
+                minPointY = bb.minPoint.y
+            if not maxPointY or bb.maxPoint.y > maxPointY:
+                maxPointY = bb.maxPoint.y
+            if not minPointZ or bb.minPoint.z < minPointZ:
+                minPointZ = bb.minPoint.z
+            if not maxPointZ or bb.maxPoint.z > maxPointZ:
+                maxPointZ = bb.maxPoint.z
         return {
             "x": maxPointX - minPointX,
             "y": maxPointY - minPointY,
